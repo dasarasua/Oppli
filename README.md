@@ -1,41 +1,57 @@
 # Oppli
 
 Oppli is a **local-first career and entrepreneurship manager** — built to help you organize your job hunt, grow your network, and develop your own ideas.  
-Everything runs in your browser with **no server and no sign-up** — your data stays private.
-
-🛠️ Opply is **built by a Product Manager** with hands-on experience in job hunting, networking, and launching entrepreneurial projects — designed to solve real challenges professionals face.
+Everything runs in your browser with no server and no sign-up — your data stays private.
 
 ---
 
-## 🚀 Core modules
+## ✨ Features
 
-- **Companies**  
-  Organize the companies you want to apply to: dream jobs, regular opportunities, or those that can support your entrepreneurial ideas.
-
-- **Jobs**  
-  Track job applications with a flexible **funnel / kanban** or **table view**. Add filters to focus on what matters.
-
-- **Contacts**  
-  Manage the people who can help you find a job, grow your network, or develop your projects.
-
-- **Coffee chats**  
-  Schedule and follow your networking coffee chats in a **funnel/kanban** or **table view**.
-
-- **Next actions**  
-  Plan your next steps with **calendar** and **card views**. Each action can be linked to a company, job, contact, or entrepreneurship project — and broken down into sub-actions.
-
-- **Dashboard 360**  
-  See all your information in one place with a clean UI — separated into **Job Hunting** and **Entrepreneurship** views.
+- **Companies**: Organize the companies you want to apply to: dream jobs, regular opportunities, or those that can support your entrepreneurial ideas.  
+- **Jobs**: Track applications with a flexible funnel (kanban) or table view.  
+- **Contacts**: Manage the people who can help you find a job, grow your network, or develop projects.  
+- **Coffee chats**: Schedule and track networking coffee chats.  
+- **Next actions**: Plan your next steps with calendar and card views.  
+- **Dashboard 360**: See everything in one place, separated into Job Hunting and Entrepreneurship views.  
 
 ---
 
-## 🌐 Live website
-- **https://oppli.io** *(Cloudflare Pages)*
+## 🌐 Live Website
 
-## 🧩 Chrome extension
-Opply also includes a **LinkedIn Chrome extension** (Manifest V3) that helps you:  
-- Capture profiles and jobs in one click  
-- Save them directly into Opply’s local storage  
-- Enhance your job hunt workflow seamlessly inside LinkedIn  
+👉 [https://oppli.io](https://oppli.io) (Cloudflare Pages)
 
-*(Extension will be available in the Chrome Web Store soon.)*
+---
+
+## 🧩 Chrome Extension
+
+The **Oppli Chrome Extension** integrates directly into LinkedIn:  
+
+- Capture job postings and contact profiles in one click  
+- Save them directly into Oppli’s local storage  
+- Enhance your workflow seamlessly inside LinkedIn  
+
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Extension-coming%20soon-blue)]()  
+*(badge will link to the store once the extension is published)*
+
+More info: [extension/README.md](extension/README.md)
+
+---
+
+## 📜 License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## 🙌 Contributing
+
+Pull requests are welcome!  
+For major changes, please open an issue first to discuss what you’d like to improve.
+
+---
+
+## 📬 Support
+
+- Website: [oppli.io](https://oppli.io)  
+- Privacy policy: [oppli.io/privacy](https://oppli.io/privacy.html)  
+- Issues: [GitHub Issues](https://github.com/dasarasua/oppli-extension/issues) *(for bugs and feature requests)*
