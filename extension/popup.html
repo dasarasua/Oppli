@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Oppli Inspector</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; width: 380px; margin:0; padding:12px; }
+    h1 { font-size: 16px; margin: 0 0 8px; }
+    h2 { font-size: 14px; margin: 12px 0 6px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { font-size: 12px; border-bottom: 1px solid #eee; padding: 4px 6px; text-align: left; vertical-align: top; }
+    .count { font-weight: 700; }
+    button { padding: 6px 10px; border-radius: 8px; border: 1px solid #ddd; background: #fafafa; cursor: pointer; }
+    section.actions { display:flex; gap:8px; margin-top: 12px; }
+    a { font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Oppli Inspector</h1>
+  <div id="stats"></div>
+
+  <h2>Jobs (latest 10)</h2>
+  <table id="jobs">
+    <thead><tr><th>Title</th><th>Company</th><th>URL</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <h2>Contacts (latest 10)</h2>
+  <table id="contacts">
+    <thead><tr><th>Name</th><th>Role</th><th>Company</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <section class="actions">
+    <button id="export">Export JSON</button>
+    <button id="clear">Clear</button>
+  </section>
+
+  <script src="popup.js"></script>
+</body>
+</html>

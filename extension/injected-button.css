@@ -1,0 +1,7 @@
+.oppli-save-btn{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:8px 12px; border-radius:8px; font-weight:700; cursor:pointer;
+    border:1px solid #e5e7eb; background:#f0f9ff; color:#0369a1;
+  }
+  .oppli-save-btn:hover{ background:#e0f2fe; border-color:#bae6fd; }
+  
