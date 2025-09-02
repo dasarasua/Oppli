@@ -54,4 +54,4 @@ For major changes, please open an issue first to discuss what you’d like to im
 
 - Website: [oppli.io](https://oppli.io)  
 - Privacy policy: [oppli.io/privacy](https://oppli.io/privacy.html)  
-- Issues: [GitHub Issues](https://github.com/dasarasua/oppli-extension/issues) *(for bugs and feature requests)*
+- Issues: [GitHub Issues](https://github.com/dasarasua/Oppli/issues) *(for bugs and feature requests)*
