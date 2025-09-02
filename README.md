@@ -1,6 +1,6 @@
-# Opply
+# Oppli
 
-Opply is a **local-first career and entrepreneurship manager** — built to help you organize your job hunt, grow your network, and develop your own ideas.  
+Oppli is a **local-first career and entrepreneurship manager** — built to help you organize your job hunt, grow your network, and develop your own ideas.  
 Everything runs in your browser with **no server and no sign-up** — your data stays private.
 
 🛠️ Opply is **built by a Product Manager** with hands-on experience in job hunting, networking, and launching entrepreneurial projects — designed to solve real challenges professionals face.
@@ -30,7 +30,7 @@ Everything runs in your browser with **no server and no sign-up** — your data 
 ---
 
 ## 🌐 Live website
-- **https://opplyapp.com** *(Cloudflare Pages)*
+- **https://oppli.io** *(Cloudflare Pages)*
 
 ## 🧩 Chrome extension
 Opply also includes a **LinkedIn Chrome extension** (Manifest V3) that helps you:  
