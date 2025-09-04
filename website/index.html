@@ -10486,6 +10486,75 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('❌ Body not found');
   }
 });
+
+// Logo retrieval function for displaying company logos (IndexedDB + localStorage fallback)
+async function getCompanyLogo(companyId) {
+  const logoId = `logo-${companyId}`;
+  
+  try {
+    // First try IndexedDB (primary storage)
+    try {
+      const db = await new Promise((resolve, reject) => {
+        const req = indexedDB.open('rolemap-images', 1);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      
+      const logoData = await new Promise((resolve, reject) => {
+        const tx = db.transaction('logos', 'readonly');
+        const store = tx.objectStore('logos');
+        const req = store.get(logoId);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      
+      if (logoData && logoData.blob) {
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(logoData.blob);
+        });
+        
+        console.log(`[Oppli] ✅ Logo retrieved from IndexedDB for company ${companyId}`);
+        return dataUrl;
+      }
+    } catch (indexDbError) {
+      console.log(`[Oppli] ⚠️ IndexedDB retrieval failed, trying localStorage:`, indexDbError.message);
+    }
+    
+    // Fallback to localStorage
+    const logos = JSON.parse(localStorage.getItem('oppli-logos') || '{}');
+    const logoData = logos[logoId];
+    
+    console.log(`[Oppli] 🔍 Logo retrieval for company ${companyId}:`, {
+      logoId: logoId,
+      found: !!logoData,
+      dataUrlLength: logoData?.dataUrl?.length,
+      allLogos: Object.keys(logos)
+    });
+    
+    return logoData ? logoData.dataUrl : null;
+  } catch (error) {
+    console.error('Error retrieving logo:', error);
+    return null;
+  }
+}
+
+// Debug function to check all stored logos
+function debugLogos() {
+  try {
+    const logos = JSON.parse(localStorage.getItem('oppli-logos') || '{}');
+    console.log('All stored logos:', logos);
+    return logos;
+  } catch (error) {
+    console.error('Error debugging logos:', error);
+    return {};
+  }
+}
+
+// Make functions globally available
+window.getCompanyLogo = getCompanyLogo;
+window.debugLogos = debugLogos;
 </script>
 </body>
 </html>
