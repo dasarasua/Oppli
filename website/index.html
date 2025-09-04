@@ -10560,9 +10560,11 @@ window.debugLogos = debugLogos;
 (function() {
   console.log('[Oppli] 🔄 Setting up auto-refresh listener...');
   
-  // Listen for data updates from LinkedIn extension
-  window.addEventListener('oppli-data-updated', function(event) {
-    console.log('[Oppli] 🔄 Received data update event:', event.detail);
+                // Listen for data updates from LinkedIn extension
+              window.addEventListener('oppli-data-updated', function(event) {
+                console.log('[Oppli] 🔄 Received data update event:', event.detail);
+                console.log('[Oppli] 🔄 Event type:', event.type);
+                console.log('[Oppli] 🔄 Event detail:', JSON.stringify(event.detail));
     
     // Get current active module
     const activeModule = document.querySelector('.module.active');
@@ -10574,26 +10576,38 @@ window.debugLogos = debugLogos;
     const moduleId = activeModule.id;
     console.log('[Oppli] 🔄 Refreshing active module:', moduleId);
     
-    // Trigger refresh based on module type
-    if (moduleId === 'jobs') {
-      // Refresh jobs data
-      if (typeof loadJobs === 'function') {
-        loadJobs();
-        console.log('[Oppli] ✅ Jobs data refreshed');
-      }
-    } else if (moduleId === 'contacts') {
-      // Refresh contacts data
-      if (typeof loadContacts === 'function') {
-        loadContacts();
-        console.log('[Oppli] ✅ Contacts data refreshed');
-      }
-    } else if (moduleId === 'companies') {
-      // Refresh companies data
-      if (typeof loadCompanies === 'function') {
-        loadCompanies();
-        console.log('[Oppli] ✅ Companies data refreshed');
-      }
-    }
+                    // Trigger refresh based on module type
+                if (moduleId === 'jobs') {
+                  // Refresh jobs data
+                  console.log('[Oppli] 🔄 Checking loadJobs function...', typeof loadJobs);
+                  if (typeof loadJobs === 'function') {
+                    console.log('[Oppli] 🔄 Calling loadJobs()...');
+                    loadJobs();
+                    console.log('[Oppli] ✅ Jobs data refreshed');
+                  } else {
+                    console.log('[Oppli] ⚠️ loadJobs function not found');
+                  }
+                } else if (moduleId === 'contacts') {
+                  // Refresh contacts data
+                  console.log('[Oppli] 🔄 Checking loadContacts function...', typeof loadContacts);
+                  if (typeof loadContacts === 'function') {
+                    console.log('[Oppli] 🔄 Calling loadContacts()...');
+                    loadContacts();
+                    console.log('[Oppli] ✅ Contacts data refreshed');
+                  } else {
+                    console.log('[Oppli] ⚠️ loadContacts function not found');
+                  }
+                } else if (moduleId === 'companies') {
+                  // Refresh companies data
+                  console.log('[Oppli] 🔄 Checking loadCompanies function...', typeof loadCompanies);
+                  if (typeof loadCompanies === 'function') {
+                    console.log('[Oppli] 🔄 Calling loadCompanies()...');
+                    loadCompanies();
+                    console.log('[Oppli] ✅ Companies data refreshed');
+                  } else {
+                    console.log('[Oppli] ⚠️ loadCompanies function not found');
+                  }
+                }
     
     // Show a subtle notification
     showNotification('Data updated from LinkedIn', 'success');
