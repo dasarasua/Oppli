@@ -2436,7 +2436,7 @@ body {
   box-shadow:0 1px 3px rgba(0,0,0,.05);
 }
 .dash360-section > h4{
-  margin:0 0 12px;.dash360-inv-text 
+  margin:0 0 12px;
   font-size:14px;
   font-weight:600;
   letter-spacing:.2px;
@@ -5765,6 +5765,17 @@ wrap.appendChild(toolbar);
         const row = el('div',{style:'display:flex;gap:6px;align-items:center;margin-top:6px'});
         if(j.sourceLink){ const a = el('a',{href:normalizeUrl(j.sourceLink),target:'_blank',class:'link small'},['job description']); a.onclick = e=> e.stopPropagation(); row.appendChild(a); }
         card.appendChild(row);
+        
+        // Add date fields in bottom right (very small and almost transparent)
+        const dateRow = el('div',{style:'position:absolute;bottom:4px;right:4px;font-size:10px;color:rgba(100,116,139,0.4);line-height:1.2'});
+        if(j.createdDate || j.lastUpdated) {
+          const dates = [];
+          if(j.createdDate) dates.push(`Created: ${j.createdDate}`);
+          if(j.lastUpdated) dates.push(`Updated: ${j.lastUpdated}`);
+          dateRow.textContent = dates.join(' | ');
+          card.appendChild(dateRow);
+        }
+        
         body.appendChild(card);
       });
       col.appendChild(h); col.appendChild(body); board.appendChild(col);
@@ -5781,6 +5792,8 @@ wrap.appendChild(toolbar);
       {key:'status', label:'Status', sortable:true},
       {key:'location', label:'Location', sortable:true},
       {key:'salary', label:'Salary', sortable:true},
+      {key:'createdDate', label:'Created date', sortable:true},
+      {key:'lastUpdated', label:'Last Update', sortable:true},
       {key:'source', label:'Job description', sortable:false},
       {key:'_actions', label:'Actions', sortable:false}
     ];
@@ -5828,6 +5841,8 @@ wrap.appendChild(toolbar);
         tr.appendChild(el('td',{},[j.status || '—']));
         tr.appendChild(el('td',{},[j.location || '—']));
         tr.appendChild(el('td',{},[j.salary || '—']));
+        tr.appendChild(el('td',{},[j.createdDate || '—']));
+        tr.appendChild(el('td',{},[j.lastUpdated || '—']));
         const s = el('td'); if(j.sourceLink){ const a = el('a',{href:normalizeUrl(j.sourceLink),target:'_blank',class:'link small'},['job description']); s.appendChild(a); } else s.textContent='—'; tr.appendChild(s);
         const act = el('td');
         const dropdown = makeActionDropdown(
@@ -5858,11 +5873,14 @@ function openJobDetails(j){
   g2.appendChild(infoField('Location', j.location || '—'));
   const g3 = el('div',{class:'row'});
   g3.appendChild(infoField('Salary', j.salary || '—'));
-  g3.appendChild(infoField('Last follow-up', j.lastFollowUp ? fmtDate(j.lastFollowUp) : '—'));
+  g3.appendChild(infoField('Last Update', j.lastUpdated || '—'));
+  const g3b = el('div',{class:'row'});
+  g3b.appendChild(infoField('Created date', j.createdDate || '—'));
+  g3b.appendChild(infoField('Last follow-up', j.lastFollowUp ? fmtDate(j.lastFollowUp) : '—'));
   const g4 = el('div',{}); g4.appendChild(infoField('Notes', j.notes || '—'));
   if(j.sourceLink){ const url = normalizeUrl(j.sourceLink); const jd = el('div'); jd.appendChild(el('label',{html:'Job description'})); jd.appendChild(el('a',{href:url, target:'_blank', class:'link small'},[url])); box.appendChild(jd); }
   function infoField(lbl, val){ const box = el('div'); box.appendChild(el('label',{html:lbl})); box.appendChild(el('div',{class:'value'},[val])); return box; }
-  box.appendChild(g1); box.appendChild(g2); box.appendChild(g3); box.appendChild(g4);
+  box.appendChild(g1); box.appendChild(g2); box.appendChild(g3); box.appendChild(g3b); box.appendChild(g4);
   const actions = el('div',{class:'right', style:'margin-top:10px'});
   const editBtn = el('button',{class:'btn-teal'},['Edit']); editBtn.onclick = ()=>{ modal.close(); openJobModal(j); };
   const closeBtn = el('button',{class:'iconbtn'},['Close']); closeBtn.onclick = ()=> modal.close();
@@ -5871,7 +5889,18 @@ function openJobDetails(j){
   modal.open('Job details', box);
 }
 function openJobModal(j){
-  const isEdit = !!j; const state = j? {...j} : {status:'To apply'};
+  const isEdit = !!j; 
+  const state = j? {...j} : {
+    status:'To apply',
+    createdDate: new Date().toISOString().split('T')[0], // Default to today for new jobs
+    lastUpdated: '' // Empty for new jobs
+  };
+  
+  // Ensure existing jobs have createdDate if missing
+  if (isEdit && !state.createdDate) {
+    state.createdDate = new Date().toISOString().split('T')[0];
+  }
+  
   const form = el('div');
   const r1 = el('div',{class:'row'});
   r1.appendChild(inputField('Title*','title'));
@@ -5883,11 +5912,18 @@ function openJobModal(j){
   const r3 = el('div',{class:'row'});
   r3.appendChild(inputField('Salary','salary'));
   r3.appendChild(inputField('Location','location'));
+  
+  // Add date fields row (above notes)
+  const rDates = el('div',{class:'row'});
+  rDates.appendChild(dateField('Created date','createdDate'));
+  rDates.appendChild(dateField('Last Update','lastUpdated'));
+  
   const r4 = el('div',{}); r4.appendChild(textField('Notes','notes'));
   function inputField(lbl,key){ const box = el('div'); box.appendChild(el('label',{html:lbl})); const n = el('input',{type:'text',value:state[key]||''}); n.oninput=()=> state[key]=n.value; box.appendChild(n); return box; }
   function selectFieldInit(lbl, key, opts){ const box = el('div'); box.appendChild(el('label',{html:lbl})); const n = el('select'); opts.forEach(o => n.appendChild(el('option',{value:o.value},[o.label]))); const initial = (state[key]!==undefined && state[key]!==null && state[key]!=='') ? state[key] : (opts[0] ? opts[0].value : ''); n.value = initial; state[key] = initial; n.onchange = () => state[key] = n.value; box.appendChild(n); return box; }
+  function dateField(lbl,key){ const box = el('div'); box.appendChild(el('label',{html:lbl})); const n = el('input',{type:'date',value:state[key]||''}); if(key === 'lastUpdated' && !state[key]) { n.placeholder = 'dd/mm/yyyy'; } n.oninput=()=> state[key]=n.value; box.appendChild(n); return box; }
   function textField(lbl,key){ const box = el('div'); box.appendChild(el('label',{html:lbl})); const n = el('textarea'); n.value = state[key]||''; n.oninput=()=> state[key]=n.value; box.appendChild(n); return box; }
-  form.appendChild(r1); form.appendChild(r2); form.appendChild(r3); form.appendChild(r4);
+  form.appendChild(r1); form.appendChild(r2); form.appendChild(r3); form.appendChild(rDates); form.appendChild(r4);
   const actions = el('div',{class:'right'});
   const saveBtn = el('button',{class:'btn-teal'},[isEdit?'Save':'Add']);
   saveBtn.onclick = ()=>{ if(!state.title || !state.companyId) return alert('Title and Company are required'); if(isEdit){ db.jobs = db.jobs.map(x=> x.id===state.id? {...x, ...state} : x); } else { state.id = uid('job'); db.jobs.unshift(state); } save(); modal.close(); render(); };
