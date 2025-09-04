@@ -1165,6 +1165,10 @@ body {
   .small{
     font-size: 12px;
   }
+
+  .verysmall{
+    font-size: 10px;
+  }
   
   .archived{
     opacity: .6;
@@ -5775,11 +5779,11 @@ wrap.appendChild(toolbar);
         const comp = db.companies.find(c=>c.id===j.companyId);
         card.appendChild(el('div',{class:'muted'},[comp?comp.name:'—']));
         const row = el('div',{style:'display:flex;gap:6px;align-items:center;margin-top:6px'});
-        if(j.sourceLink){ const a = el('a',{href:normalizeUrl(j.sourceLink),target:'_blank',class:'link small'},['job description']); a.onclick = e=> e.stopPropagation(); row.appendChild(a); }
+        if(j.sourceLink){ const a = el('a',{href:normalizeUrl(j.sourceLink),target:'_blank',class:'link verysmall'},['Job Description']); a.onclick = e=> e.stopPropagation(); row.appendChild(a); }
         card.appendChild(row);
         
         // Add date fields in bottom right (very small and almost transparent)
-        const dateRow = el('div',{style:'position:absolute;bottom:4px;right:4px;font-size:8px;color:rgba(100,116,139,0.4);line-height:1.1;text-align:right'});
+        const dateRow = el('div',{style:'position:absolute;bottom:4px;right:4px;font-size:8px;color:rgba(100,116,139,0.6);line-height:1.1;text-align:right'});
         if(j.createdDate || j.lastUpdated) {
           const dates = [];
           if(j.createdDate) dates.push(`Created: ${j.createdDate}`);
@@ -10504,7 +10508,7 @@ console.log('RoleMap v9 ready.');
 
 <footer class="fixed-footer" style="text-align:center; padding:20px 16px; font-size:12px; color: rgba(100, 116, 139, 0.3); margin-top: 180px; border-top: 1px solid #e5e7eb; ">
   <div>Oppli is free to use — built for the community.</div>
-  <div>Created by Diego Sarasúa</div>
+  <div>Created by <a href="https://www.linkedin.com/in/diegosarasuamarchesse/" target="_blank" class="link" style="color: rgba(0, 180, 216, 0.35);">Diego Sarasúa</a></div>
   <div style="margin-top:6px">
     <a href="/privacy.html" class="link" style="color: rgba(0, 180, 216, 0.35);">Privacy Policy</a>
   </div>
