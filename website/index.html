@@ -401,6 +401,17 @@ body {
   .action-dropdown-btn{background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px}
   /* Ensure Actions column has enough width for dropdown */
   th:last-child, td:last-child{min-width:140px;width:140px}
+  
+  /* Jobs table specific column widths */
+  .jobs-table th:nth-child(1), .jobs-table td:nth-child(1) { width: 20%; } /* Title - made narrower */
+  .jobs-table th:nth-child(2), .jobs-table td:nth-child(2) { width: 15%; } /* Company */
+  .jobs-table th:nth-child(3), .jobs-table td:nth-child(3) { width: 11%; } /* Status */
+  .jobs-table th:nth-child(4), .jobs-table td:nth-child(4) { width: 11%; } /* Location */
+  .jobs-table th:nth-child(5), .jobs-table td:nth-child(5) { width: 10%; } /* Salary */
+  .jobs-table th:nth-child(6), .jobs-table td:nth-child(6) { width: 11%; } /* Created date */
+  .jobs-table th:nth-child(7), .jobs-table td:nth-child(7) { width: 11%; } /* Last Update */
+  .jobs-table th:nth-child(8), .jobs-table td:nth-child(8) { width: 11%; }  /* Job description */
+  .jobs-table th:nth-child(9), .jobs-table td:nth-child(9) { min-width: 140px; width: 140px; } /* Actions */
   .action-dropdown-btn:hover{background:#e5e7eb}
   .action-dropdown-menu{position:fixed;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);min-width:100px;z-index:1000;display:none}
   .action-dropdown-menu.open{display:block}
@@ -1042,6 +1053,7 @@ body {
   
   .muted{
     color: #6b7280;
+    font-size: 12px;
   }
   
   .pill{
@@ -5759,7 +5771,7 @@ wrap.appendChild(toolbar);
         const bAction = el('button',{class:'iconbtn',title:'New Action', draggable:'false'},[icon('plus')]); bAction.onmousedown = e=> e.stopPropagation(); bAction.onclick = e=>{ e.stopPropagation(); openActionCreateModal({ relatedType: 'Job', relatedId: j.id }); };
         const bDel = el('button',{class:'iconbtn',title:'Delete', draggable:'false'},[icon('close')]); bDel.onmousedown = e=> e.stopPropagation(); bDel.onclick = e=>{ e.stopPropagation(); confirmModal('Delete job',`Delete "${j.title}"?`,()=>{ db.jobs = db.jobs.filter(x=>x.id!==j.id); db.chats = db.chats.map(ch=> ch.jobId===j.id? {...ch, jobId:''}: ch); save(); syncView(); }); };
         act.appendChild(bAction); act.appendChild(bEdit); act.appendChild(bDel); card.appendChild(act);
-        card.appendChild(el('div',{style:'font-weight:700;color:var(--navy);padding-right:60px'},[j.title]));
+        card.appendChild(el('div',{style:'font-weight:600; font-size:12px;color:var(--navy);padding-right:60px'},[j.title]));
         const comp = db.companies.find(c=>c.id===j.companyId);
         card.appendChild(el('div',{class:'muted'},[comp?comp.name:'—']));
         const row = el('div',{style:'display:flex;gap:6px;align-items:center;margin-top:6px'});
@@ -5767,12 +5779,12 @@ wrap.appendChild(toolbar);
         card.appendChild(row);
         
         // Add date fields in bottom right (very small and almost transparent)
-        const dateRow = el('div',{style:'position:absolute;bottom:4px;right:4px;font-size:10px;color:rgba(100,116,139,0.4);line-height:1.2'});
+        const dateRow = el('div',{style:'position:absolute;bottom:4px;right:4px;font-size:8px;color:rgba(100,116,139,0.4);line-height:1.1;text-align:right'});
         if(j.createdDate || j.lastUpdated) {
           const dates = [];
           if(j.createdDate) dates.push(`Created: ${j.createdDate}`);
           if(j.lastUpdated) dates.push(`Updated: ${j.lastUpdated}`);
-          dateRow.textContent = dates.join(' | ');
+          dateRow.innerHTML = dates.join('<br>');
           card.appendChild(dateRow);
         }
         
@@ -5784,7 +5796,7 @@ wrap.appendChild(toolbar);
   }
   function tableView(){
     let sortKey = null, sortDir = 'ascending';
-    const tbl = el('table');
+    const tbl = el('table', {class: 'jobs-table'});
     const thead = el('thead'); const trh = el('tr');
     const cols = [
       {key:'title', label:'Title', sortable:true},
@@ -5841,8 +5853,8 @@ wrap.appendChild(toolbar);
         tr.appendChild(el('td',{},[j.status || '—']));
         tr.appendChild(el('td',{},[j.location || '—']));
         tr.appendChild(el('td',{},[j.salary || '—']));
-        tr.appendChild(el('td',{},[j.createdDate || '—']));
-        tr.appendChild(el('td',{},[j.lastUpdated || '—']));
+        tr.appendChild(el('td',{},[j.createdDate ? fmtDate(j.createdDate) : '—']));
+        tr.appendChild(el('td',{},[j.lastUpdated ? fmtDate(j.lastUpdated) : '—']));
         const s = el('td'); if(j.sourceLink){ const a = el('a',{href:normalizeUrl(j.sourceLink),target:'_blank',class:'link small'},['job description']); s.appendChild(a); } else s.textContent='—'; tr.appendChild(s);
         const act = el('td');
         const dropdown = makeActionDropdown(
