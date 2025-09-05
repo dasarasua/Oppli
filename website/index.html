@@ -5311,7 +5311,7 @@ window.addEventListener('keydown', e=>{ if(e.key==='Escape') modal.close(); });
 <div class="hiw">
 
   <!-- Top alert: always export -->
-  <div class="hiw-alert">
+   <div class="hiw-alert">
     <div class="hiw-alert-ico">💾</div>
     <div class="hiw-alert-text">
       <strong>Always export a backup when you finish.</strong>
@@ -5319,6 +5319,14 @@ window.addEventListener('keydown', e=>{ if(e.key==='Escape') modal.close(); });
       <div class="hiw-alert-actions">
         <span> How to Export? --> Open Settings and choose Export.</span>
       </div>
+    </div>
+  </div>
+  
+  <div class="hiw-alert">
+    <div class="hiw-alert-ico">⚠️</div>
+    <div class="hiw-alert-text">
+      <strong>This software is not responsive and only works on computers.</strong>
+      <div>Please use a desktop or laptop for the best experience.</div>
     </div>
   </div>
 
@@ -5337,8 +5345,10 @@ window.addEventListener('keydown', e=>{ if(e.key==='Escape') modal.close(); });
     <!-- 2) LinkedIn extension -->
     <div class="hiw-card">
       <h4>🔗 LinkedIn extension</h4>
-      <p>Save profiles and jobs to Oppli with one click.</p>
-      <a class="hiw-cta" href="https://chromewebstore.google.com/detail/oppli-saver/jkkgmhpfdfmdghfifmjkfieelcnhpidp" target="_blank" rel="noopener">Open LinkedIn Extension</a>
+            <ul class="hiw-bullets">
+        <li><strong>Profile: </strong> Saving a profile creates a company (with logo) and a contact (name, role, company, LinkedIn URL, relationship = cold).</li>
+        <li><strong>Job: </strong> Saving a job creates a company (with logo) and a job (name, company, LinkedIn URL, created/updated date = today).</li>
+      </ul>
     </div>
 
     <!-- 3) Modules (full width) -->
@@ -5399,6 +5409,7 @@ window.addEventListener('keydown', e=>{ if(e.key==='Escape') modal.close(); });
     background:var(--sky); color:#fff; font-weight:800; text-decoration:none;
   }
   .hiw-cta:hover { filter:brightness(.95); }
+  
 </style>
 `;
 
@@ -6548,7 +6559,7 @@ function openContactModal(ct){
             }
           });
         }, 10);
-      } else if (typeof window.d360RefreshActionsForCompanyId === 'function') {
+      } else if (typeof window.d360RefreshActionsForCompanyId === 'function' && currentTab === 'ideas') {
         // Prefer refreshing the exact company's actions section this action belongs to
         setTimeout(() => {
           const companyId = d360GetCompanyIdForActionId(state.id);
@@ -8241,14 +8252,14 @@ function openAddSubtaskModal(action) {
           }
         });
       }, 10);
-    } else if (typeof window.d360RefreshActionsForCompanyId === 'function') {
+    } else if (typeof window.d360RefreshActionsForCompanyId === 'function' && currentTab === 'ideas') {
       const companyId = d360GetCompanyIdForActionId(action.id);
       const ok = companyId && window.d360RefreshActionsForCompanyId(companyId);
       if (!ok && typeof window.dash360RefreshNow === 'function') window.dash360RefreshNow();
-    } else if (typeof window.d360RefreshActionsForCompanyId === 'function') {
-      const companyId = d360GetCompanyIdForActionId(action.id);
-      const ok = companyId && window.d360RefreshActionsForCompanyId(companyId);
-      if (!ok && typeof window.dash360RefreshNow === 'function') window.dash360RefreshNow();
+    } else if (typeof window.d360RefreshActionsForCompanyId === 'function' && currentTab === 'ideas') {
+  const companyId = d360GetCompanyIdForActionId(action.id);
+  const ok = companyId && window.d360RefreshActionsForCompanyId(companyId);
+  if (!ok && typeof window.dash360RefreshNow === 'function') window.dash360RefreshNow();
     } else if (currentView === 'calendar') {
       refreshCalendar();
     } else if (currentTab === 'actions') {
