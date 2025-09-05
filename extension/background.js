@@ -80,7 +80,8 @@ async function applyMutationInTab(tabId, appKey, item){
       throw new Error(`Cannot access tab ${tabId}: ${tabError.message}`);
     }
     
-    const result = await chrome.scripting.executeScript({
+    // Add timeout to prevent hanging
+    const scriptPromise = chrome.scripting.executeScript({
       target: { tabId },
       args: [appKey, item],
       func: async (APP_KEY, it) => {
@@ -107,7 +108,7 @@ async function applyMutationInTab(tabId, appKey, item){
 
           console.log(`[Background] 🔧 DB initialized, companies: ${db.companies.length}`);
 
-          // IndexedDB functions for logo storage
+          // IndexedDB functions for logo storage with timeout and fallback
           const IMAGES_DB_NAME = 'rolemap-images';
           const IMAGES_DB_VERSION = 1;
           let _imagesDbPromise = null;
@@ -116,30 +117,93 @@ async function applyMutationInTab(tabId, appKey, item){
             if (_imagesDbPromise) return _imagesDbPromise;
             _imagesDbPromise = new Promise((resolve, reject)=>{
               const req = indexedDB.open(IMAGES_DB_NAME, IMAGES_DB_VERSION);
+              
+              // Add timeout to prevent hanging
+              const timeout = setTimeout(() => {
+                reject(new Error('IndexedDB open timeout after 5 seconds'));
+              }, 5000);
+              
               req.onupgradeneeded = ()=>{
                 const dbi = req.result;
                 if (!dbi.objectStoreNames.contains('logos')) {
                   dbi.createObjectStore('logos', { keyPath: 'id' });
                 }
               };
-              req.onsuccess = ()=> resolve(req.result);
-              req.onerror = ()=> reject(req.error);
+              req.onsuccess = ()=> {
+                clearTimeout(timeout);
+                resolve(req.result);
+              };
+              req.onerror = ()=> {
+                clearTimeout(timeout);
+                reject(req.error);
+              };
             });
             return _imagesDbPromise;
           }
 
           async function logosPut(id, blob, type){
             const dbi = await openImagesDB();
-            return new Promise((resolve,reject)=>{
+            return new Promise((resolve, reject)=>{
               const tx = dbi.transaction('logos','readwrite');
+              
+              // Add timeout to prevent hanging
+              const timeout = setTimeout(() => {
+                reject(new Error('IndexedDB transaction timeout after 3 seconds'));
+              }, 3000);
+              
               tx.objectStore('logos').put({id, blob, type});
-              tx.oncomplete = ()=> resolve();
-              tx.onerror = ()=> reject(tx.error);
+              tx.oncomplete = ()=> {
+                clearTimeout(timeout);
+                resolve();
+              };
+              tx.onerror = ()=> {
+                clearTimeout(timeout);
+                reject(tx.error);
+              };
             });
           }
 
           function dataUrlToBlob(dataUrl){
             return fetch(dataUrl).then(r=>r.blob());
+          }
+
+          // Fallback function to store in localStorage if IndexedDB fails
+          function storeLogoInLocalStorage(logoId, logoDataUrl, actualLogoType) {
+            try {
+              const logoData = {
+                id: logoId,
+                dataUrl: logoDataUrl,
+                type: actualLogoType,
+                timestamp: Date.now()
+              };
+              
+              const logosKey = 'oppli-logos';
+              const existingLogos = JSON.parse(localStorage.getItem(logosKey) || '{}');
+              existingLogos[logoId] = logoData;
+              localStorage.setItem(logosKey, JSON.stringify(existingLogos));
+              
+              console.log(`[Background] ✅ Logo stored in localStorage fallback: ${logoId}`);
+              return true;
+            } catch (error) {
+              console.error(`[Background] ❌ Error storing logo in localStorage fallback:`, error);
+              return false;
+            }
+          }
+
+          // Function to clear corrupted IndexedDB
+          function clearIndexedDB() {
+            return new Promise((resolve, reject) => {
+              const deleteReq = indexedDB.deleteDatabase(IMAGES_DB_NAME);
+              deleteReq.onsuccess = () => {
+                console.log(`[Background] ✅ IndexedDB cleared successfully`);
+                _imagesDbPromise = null; // Reset the promise cache
+                resolve();
+              };
+              deleteReq.onerror = () => {
+                console.error(`[Background] ❌ Error clearing IndexedDB:`, deleteReq.error);
+                reject(deleteReq.error);
+              };
+            });
           }
 
           // Ensure company by name; handle logo storage properly with IndexedDB
@@ -208,33 +272,46 @@ async function applyMutationInTab(tabId, appKey, item){
               console.log(`[Background] 🔧 Logo ID generated: ${logoId}`);
               console.log(`[Background] 🔧 Actual logo type: ${actualLogoType}`);
               
+              // Try IndexedDB first (primary storage), fallback to localStorage
               try {
-                // Convert data URL to blob and store in IndexedDB
-                const blob = await dataUrlToBlob(logoDataUrl);
-                await logosPut(logoId, blob, actualLogoType);
+                console.log(`[Background] 🔧 Attempting IndexedDB storage for logo: ${logoId}`);
                 
-                console.log(`[Background] ✅ Stored logo in IndexedDB for company ${name}:`, {
-                  logoId: logoId,
-                  originalLogoType: logoType,
-                  actualLogoType: actualLogoType,
-                  blobSize: blob.size,
-                  blobType: blob.type
+                // Add timeout to the entire IndexedDB operation
+                const indexDbPromise = (async () => {
+                  const blob = await dataUrlToBlob(logoDataUrl);
+                  await logosPut(logoId, blob, actualLogoType);
+                  return true;
+                })();
+                
+                const timeoutPromise = new Promise((_, reject) => {
+                  setTimeout(() => reject(new Error('IndexedDB operation timeout after 8 seconds')), 8000);
                 });
                 
-                // Save success log to localStorage
-                const successLog = `[${new Date().toISOString()}] ✅ Logo saved to IndexedDB: ${logoId}, type: ${actualLogoType}, blobSize: ${blob.size}`;
-                const successLogs = JSON.parse(localStorage.getItem('oppli-success-logs') || '[]');
-                successLogs.push(successLog);
-                localStorage.setItem('oppli-success-logs', JSON.stringify(successLogs.slice(-5))); // Keep last 5 logs
+                await Promise.race([indexDbPromise, timeoutPromise]);
+                console.log(`[Background] ✅ Logo stored in IndexedDB: ${logoId}`);
                 
-              } catch (error) {
-                console.error(`[Background] ❌ Error storing logo in IndexedDB:`, error);
+                // Also store in localStorage as backup
+                storeLogoInLocalStorage(logoId, logoDataUrl, actualLogoType);
                 
-                // Save error log to localStorage
-                const errorLog = `[${new Date().toISOString()}] ❌ IndexedDB error: ${error.message}`;
-                const errorLogs = JSON.parse(localStorage.getItem('oppli-error-logs') || '[]');
-                errorLogs.push(errorLog);
-                localStorage.setItem('oppli-error-logs', JSON.stringify(errorLogs.slice(-5))); // Keep last 5 logs
+              } catch (indexDbError) {
+                console.log(`[Background] ⚠️ IndexedDB storage failed, using localStorage fallback:`, indexDbError.message);
+                
+                // If IndexedDB is consistently failing, try to clear it
+                if (indexDbError.message.includes('timeout') || indexDbError.message.includes('corrupted')) {
+                  console.log(`[Background] 🔧 Attempting to clear corrupted IndexedDB...`);
+                  try {
+                    await clearIndexedDB();
+                    console.log(`[Background] ✅ IndexedDB cleared, will retry on next save`);
+                  } catch (clearError) {
+                    console.log(`[Background] ⚠️ Could not clear IndexedDB:`, clearError.message);
+                  }
+                }
+                
+                // Fallback to localStorage
+                const fallbackSuccess = storeLogoInLocalStorage(logoId, logoDataUrl, actualLogoType);
+                if (!fallbackSuccess) {
+                  console.error(`[Background] ❌ Both IndexedDB and localStorage storage failed for logo: ${logoId}`);
+                }
               }
             } else {
               console.log(`[Background] ⚠️ No logo data provided for company ${name}:`, {
@@ -274,7 +351,9 @@ async function applyMutationInTab(tabId, appKey, item){
               companyId: companyId || null,
               sourceLink: sourceUrl || "",
               location: location || "",
-              notes: notes || ""
+              notes: notes || "",
+              createdDate: new Date().toISOString().split('T')[0], // Add created date
+              lastUpdated: new Date().toISOString().split('T')[0]  // Add last updated date
             });
             console.log(`[Background] ✅ Job saved successfully`);
             
@@ -346,6 +425,13 @@ async function applyMutationInTab(tabId, appKey, item){
       }
     });
     
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Script execution timeout after 10 seconds')), 10000);
+    });
+    
+    const result = await Promise.race([scriptPromise, timeoutPromise]);
+    
     console.log(`[Background] 🔧 Script execution result:`, result);
     
     if (result && result[0] && result[0].result) {
@@ -409,14 +495,27 @@ async function flushQueueInto(tabId){
 // Saves from content.js
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   (async () => {
-    if (msg?.type === "saveJob" || msg?.type === "saveContact"){
-      const item = { type: msg.type === "saveJob" ? "job" : "contact", payload: msg.payload || {} };
-      console.log(`[Background] 📨 Received ${msg.type} message:`, item.payload);
-      const res  = await saveOrQueue(item);
-      sendResponse(res);
-      return;
+    try {
+      if (msg?.type === "saveJob" || msg?.type === "saveContact"){
+        const item = { type: msg.type === "saveJob" ? "job" : "contact", payload: msg.payload || {} };
+        console.log(`[Background] 📨 Received ${msg.type} message:`, item.payload);
+        
+        // Add timeout to prevent message channel from closing
+        const processingPromise = saveOrQueue(item);
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Message processing timeout after 15 seconds')), 15000);
+        });
+        
+        const res = await Promise.race([processingPromise, timeoutPromise]);
+        console.log(`[Background] 📨 Sending response:`, res);
+        sendResponse(res);
+        return;
+      }
+      sendResponse({ ok:false, error:"Unknown message type" });
+    } catch (error) {
+      console.error(`[Background] ❌ Error in message handler:`, error);
+      sendResponse({ ok: false, error: error.message });
     }
-    sendResponse({ ok:false, error:"Unknown message type" });
   })();
   return true; // keep channel open for async
 });
