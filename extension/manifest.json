@@ -2,7 +2,7 @@
   {
   "manifest_version": 3,
   "name": "Oppli Saver",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Save LinkedIn jobs & contacts into Oppli.",
   "permissions": ["storage", "scripting", "activeTab", "tabs"],
   "host_permissions": [
