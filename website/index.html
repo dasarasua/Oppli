@@ -5653,7 +5653,7 @@ function viewCompanies(){
       nameTd.appendChild(nameWrap);
       tr.appendChild(nameTd);
       tr.appendChild(el('td',{},[c.type||'—']));
-      tr.appendChild(el('td',{},[c.type||'—']));
+      tr.appendChild(el('td',{},[c.sector||'—']));
       tr.appendChild(el('td',{},[c.priority||'—']));
       tr.appendChild(el('td',{},[c.location||'—']));
 
@@ -6342,6 +6342,7 @@ function viewContacts(){
   let nameFilter = '';
   let companyFilter = 'All';
   let roleFilter = 'All';
+  let contactedFilter = 'All';
 
   /* === Contacts: unified toolbarRow + inline filters === */
 const toolbar = el('div',{class:'toolbarRow'});
@@ -6379,6 +6380,16 @@ roles.forEach(v=> rSel.appendChild(el('option',{value:v},[v])));
 rSel.onchange = ()=>{ roleFilter=rSel.value; tableRefresh(); };
 fRole.appendChild(rSel);
 filtersBar.appendChild(fRole);
+
+// Contacted
+const fContacted = el('div',{class:'field'});
+fContacted.appendChild(el('label',{},[icon('filter'),'Contacted']));
+const contactedOptions = ['All', 'No', 'Yes'];
+const contactedSel = el('select',{class:'small-select'});
+contactedOptions.forEach(v=> contactedSel.appendChild(el('option',{value:v},[v])));
+contactedSel.onchange = ()=>{ contactedFilter=contactedSel.value; tableRefresh(); };
+fContacted.appendChild(contactedSel);
+filtersBar.appendChild(fContacted);
 
 leftCt.appendChild(filtersBar);
 
@@ -6419,9 +6430,29 @@ wrap.appendChild(el('div',{style:'height:12px'}));
     if(nameFilter.trim()){ const q = nameFilter.trim().toLowerCase(); list = list.filter(c=> (c.name||'').toLowerCase().includes(q)); }
     if(companyFilter!=='All'){ const co = db.companies.find(c=>c.name===companyFilter); list = list.filter(ct=> ct.companyId=== (co?co.id:null)); }
     if(roleFilter!=='All'){ list = list.filter(ct=> (ct.role||'')===roleFilter); }
+    if(contactedFilter!=='All'){ 
+      list = list.filter(ct=> {
+        const hasCoffeeChats = db.chats && db.chats.some(chat => chat.contactId === ct.id);
+        const contactedValue = ct.contacted || (hasCoffeeChats ? 'Yes' : 'No');
+        return contactedValue === contactedFilter;
+      });
+    }
     if(sortKey){
       list.sort((a,b)=>{
-        const get = (ct)=>{ if(sortKey==='name') return (ct.name||'').toLowerCase(); if(sortKey==='role') return ((ct.role||'')+' '+(ct.department||'')).toLowerCase(); if(sortKey==='company'){ const co = db.companies.find(c=>c.id===ct.companyId); return (co?co.name:'').toLowerCase(); } if(sortKey==='relationship') return (ct.relStrength||'').toLowerCase(); if(sortKey==='contacted') return (ct.contacted||'No').toLowerCase(); if(sortKey==='email') return (ct.email||'').toLowerCase(); return ''; };
+        const get = (ct)=>{ 
+          if(sortKey==='name') return (ct.name||'').toLowerCase(); 
+          if(sortKey==='role') return ((ct.role||'')+' '+(ct.department||'')).toLowerCase(); 
+          if(sortKey==='company'){ const co = db.companies.find(c=>c.id===ct.companyId); return (co?co.name:'').toLowerCase(); } 
+          if(sortKey==='relationship') return (ct.relStrength||'').toLowerCase(); 
+          if(sortKey==='contacted') {
+            // Special sorting for contacted: Yes should come before No
+            const hasCoffeeChats = db.chats && db.chats.some(chat => chat.contactId === ct.id);
+            const contactedValue = ct.contacted || (hasCoffeeChats ? 'Yes' : 'No');
+            return contactedValue === 'Yes' ? '0' : '1'; // 0 comes before 1 in sorting
+          }
+          if(sortKey==='email') return (ct.email||'').toLowerCase(); 
+          return ''; 
+        };
         const av = get(a), bv=get(b); if(av < bv) return sortDir==='ascending' ? -1 : 1; if(av > bv) return sortDir==='ascending' ? 1 : -1; return 0;
       });
     }
