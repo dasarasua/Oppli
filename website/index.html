@@ -6200,7 +6200,50 @@ function openChatModal(ch){
   updateTogglePosition();
   
   const r1 = el('div',{class:'row'});
-  r1.appendChild(selectField('Contact*','contactId', db.contacts.map(c=>({label:c.name,value:c.id})).sort((a,b) => a.label.localeCompare(b.label))));
+  
+  // Create grouped contact selector
+  const contactBox = el('div');
+  contactBox.appendChild(el('label',{html:'Contact*'}));
+  const contactSelect = el('select');
+  contactSelect.appendChild(el('option',{value:''},['—']));
+  
+  // Group contacts by company
+  const contactsByCompany = {};
+  db.contacts.forEach(contact => {
+    const company = db.companies.find(c => c.id === contact.companyId);
+    const companyName = company ? company.name : 'Unassigned';
+    
+    if (!contactsByCompany[companyName]) {
+      contactsByCompany[companyName] = [];
+    }
+    contactsByCompany[companyName].push(contact);
+  });
+  
+  // Sort companies alphabetically, with Unassigned first
+  const sortedCompanies = Object.keys(contactsByCompany).sort((a, b) => {
+    if (a === 'Unassigned') return -1;
+    if (b === 'Unassigned') return 1;
+    return a.localeCompare(b);
+  });
+  
+  // Create optgroups for each company
+  sortedCompanies.forEach(companyName => {
+    const optgroup = el('optgroup', {label: companyName});
+    
+    // Sort contacts within each company alphabetically
+    contactsByCompany[companyName]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .forEach(contact => {
+        optgroup.appendChild(el('option', {value: contact.id}, [contact.name]));
+      });
+    
+    contactSelect.appendChild(optgroup);
+  });
+  
+  contactSelect.value = state.contactId || '';
+  contactSelect.onchange = () => state.contactId = contactSelect.value;
+  contactBox.appendChild(contactSelect);
+  r1.appendChild(contactBox);
   
   // Related field (Job or Idea)
   const relatedFieldContainer = el('div');
@@ -6209,13 +6252,46 @@ function openChatModal(ch){
   function updateRelatedField() {
     relatedFieldContainer.innerHTML = '';
     if (state.chatType === 'job') {
-      // Create job select with custom onChange to update company
+      // Create grouped job selector
       const jobBox = el('div');
       jobBox.appendChild(el('label',{html:'Job'}));
       const jobSelect = el('select');
       jobSelect.appendChild(el('option',{value:''},['—']));
-      db.jobs.map(j=>({label:j.title,value:j.id})).sort((a,b) => a.label.localeCompare(b.label)).forEach(o=> jobSelect.appendChild(el('option',{value:o.value},[o.label])));
-      jobSelect.value = state.jobId||'';
+      
+      // Group jobs by company
+      const jobsByCompany = {};
+      db.jobs.forEach(job => {
+        const company = db.companies.find(c => c.id === job.companyId);
+        const companyName = company ? company.name : 'Unassigned';
+        
+        if (!jobsByCompany[companyName]) {
+          jobsByCompany[companyName] = [];
+        }
+        jobsByCompany[companyName].push(job);
+      });
+      
+      // Sort companies alphabetically, with Unassigned first
+      const sortedJobCompanies = Object.keys(jobsByCompany).sort((a, b) => {
+        if (a === 'Unassigned') return -1;
+        if (b === 'Unassigned') return 1;
+        return a.localeCompare(b);
+      });
+      
+      // Create optgroups for each company
+      sortedJobCompanies.forEach(companyName => {
+        const optgroup = el('optgroup', {label: companyName});
+        
+        // Sort jobs within each company alphabetically
+        jobsByCompany[companyName]
+          .sort((a, b) => a.title.localeCompare(b.title))
+          .forEach(job => {
+            optgroup.appendChild(el('option', {value: job.id}, [job.title]));
+          });
+        
+        jobSelect.appendChild(optgroup);
+      });
+      
+      jobSelect.value = state.jobId || '';
       jobSelect.onchange = () => {
         state.jobId = jobSelect.value;
         // Update company when job changes
@@ -6328,6 +6404,7 @@ wrap.appendChild(el('div',{style:'height:12px'}));
     {key:'role', label:'Role', sortable:true},
     {key:'company', label:'Company', sortable:true},
     {key:'relationship', label:'Relationship', sortable:true},
+    {key:'contacted', label:'Contacted', sortable:true},
     {key:'email', label:'Email', sortable:true},
     {key:'linkedin', label:'LinkedIn', sortable:false},
     {key:'_actions', label:'Actions', sortable:false},
@@ -6344,7 +6421,7 @@ wrap.appendChild(el('div',{style:'height:12px'}));
     if(roleFilter!=='All'){ list = list.filter(ct=> (ct.role||'')===roleFilter); }
     if(sortKey){
       list.sort((a,b)=>{
-        const get = (ct)=>{ if(sortKey==='name') return (ct.name||'').toLowerCase(); if(sortKey==='role') return ((ct.role||'')+' '+(ct.department||'')).toLowerCase(); if(sortKey==='company'){ const co = db.companies.find(c=>c.id===ct.companyId); return (co?co.name:'').toLowerCase(); } if(sortKey==='relationship') return (ct.relStrength||'').toLowerCase(); if(sortKey==='email') return (ct.email||'').toLowerCase(); return ''; };
+        const get = (ct)=>{ if(sortKey==='name') return (ct.name||'').toLowerCase(); if(sortKey==='role') return ((ct.role||'')+' '+(ct.department||'')).toLowerCase(); if(sortKey==='company'){ const co = db.companies.find(c=>c.id===ct.companyId); return (co?co.name:'').toLowerCase(); } if(sortKey==='relationship') return (ct.relStrength||'').toLowerCase(); if(sortKey==='contacted') return (ct.contacted||'No').toLowerCase(); if(sortKey==='email') return (ct.email||'').toLowerCase(); return ''; };
         const av = get(a), bv=get(b); if(av < bv) return sortDir==='ascending' ? -1 : 1; if(av > bv) return sortDir==='ascending' ? 1 : -1; return 0;
       });
     }
@@ -6354,6 +6431,12 @@ wrap.appendChild(el('div',{style:'height:12px'}));
       tr.appendChild(el('td',{},[ (ct.role||'') + (ct.department? ' • '+ct.department : '') ]));
       tr.appendChild(el('td',{},[ (db.companies.find(c=>c.id===ct.companyId)||{}).name || '—' ]));
       tr.appendChild(el('td',{},[ ct.relStrength ]));
+      
+      // Contacted column - check if contact has coffee chats
+      const hasCoffeeChats = db.chats && db.chats.some(chat => chat.contactId === ct.id);
+      const contactedValue = ct.contacted || (hasCoffeeChats ? 'Yes' : 'No');
+      tr.appendChild(el('td',{},[ contactedValue ]));
+      
       tr.appendChild(el('td',{},[ ct.email || '—' ]));
       const ltd = el('td'); if(ct.linkedIn){ ltd.appendChild(el('a',{href:normalizeUrl(ct.linkedIn),target:'_blank',class:'link'},['Open'])); } else { ltd.textContent='—'; } tr.appendChild(ltd);
     const act = el('td');
@@ -6380,6 +6463,11 @@ function openContactDetails(ct){
   const g2 = el('div',{class:'row'});
   g2.appendChild(infoField('Role', (ct.role||'') + (ct.department? ' • '+ct.department : '')));
   g2.appendChild(infoField('Relationship', ct.relStrength || '—'));
+  
+  // Add contacted status to details view
+  const hasCoffeeChats = db.chats && db.chats.some(chat => chat.contactId === ct.id);
+  const contactedValue = ct.contacted || (hasCoffeeChats ? 'Yes' : 'No');
+  g2.appendChild(infoField('Contacted', contactedValue));
   const g3 = el('div',{class:'row'});
   g3.appendChild(infoField('Email', ct.email || '—'));
   const lk = ct.linkedIn ? el('a',{href:normalizeUrl(ct.linkedIn),target:'_blank',class:'link'},['Open']) : '—';
@@ -6395,7 +6483,7 @@ function openContactDetails(ct){
   modal.open('Contact details', box);
 }
 function openContactModal(ct){
-  const isEdit = !!ct; const state = ct? {...ct} : {relStrength:'Cold'};
+  const isEdit = !!ct; const state = ct? {...ct} : {relStrength:'Cold', contacted:'No'};
   const form = el('div');
   const r1 = el('div',{class:'row'});
   r1.appendChild(inputField('Name*','name'));
