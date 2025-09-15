@@ -3031,6 +3031,7 @@ async function processImage(file){
 const $ = sel => document.querySelector(sel);
 function el(tag, attrs={}, children=[]) { const n = document.createElement(tag); for (const k in attrs){ if(k==='class') n.className = attrs[k]; else if(k==='html') n.innerHTML = attrs[k]; else n.setAttribute(k, attrs[k]); } for (const c of children){ n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); } return n; }
 function uid(prefix){ return prefix+'-'+Math.random().toString(36).slice(2,10); }
+function fmtDate(dateStr){ if(!dateStr) return '—'; const d = new Date(dateStr); return d.toLocaleDateString('en-GB'); }
 function icon(name){
   const span = el('span', {class:'icon', 'aria-hidden':'true'});
   const svgNS = 'http://www.w3.org/2000/svg';
@@ -6075,6 +6076,18 @@ wrap.appendChild(toolbar);
         if(ch.dateScheduled){
           card.appendChild(el('div',{class:'muted'},['📅 ', fmtDate(ch.dateScheduled)]));
         }
+        
+        // Add dates at bottom right (like jobs card)
+        const datesContainer = el('div',{style:'position:absolute;bottom:4px;right:4px;font-size:8px;color:rgba(100,116,139,0.6);line-height:1.1;text-align:right'});
+        if(ch.createdDate){
+          datesContainer.appendChild(el('div',{},['Created: ', fmtDate(ch.createdDate)]));
+        }
+        if(ch.lastUpdatedDate){
+          datesContainer.appendChild(el('div',{},['Updated: ', fmtDate(ch.lastUpdatedDate)]));
+        }
+        if(ch.createdDate || ch.lastUpdatedDate){
+          card.appendChild(datesContainer);
+        }
         body.appendChild(card);
       });
       col.appendChild(h); col.appendChild(body); board.appendChild(col);
@@ -6093,6 +6106,7 @@ wrap.appendChild(toolbar);
       {key:'channel', label:'Channel', sortable:true},
       {key:'scheduled', label:'Scheduled', sortable:true},
       {key:'type', label:'Type', sortable:true},
+      {key:'created', label:'Created', sortable:true},
       {key:'notes', label:'Notes', sortable:false},
       {key:'_actions', label:'Actions', sortable:false},
     ];
@@ -6101,8 +6115,8 @@ wrap.appendChild(toolbar);
     const tbody = el('tbody'); tbl.appendChild(thead); tbl.appendChild(tbody);
     function updateHeaderSorts(){ const ths = thead.querySelectorAll('th'); ths.forEach((th,i)=>{ const col = cols[i]; if(!col.sortable){ th.removeAttribute('aria-sort'); return; } if(col.key === sortKey){ th.setAttribute('aria-sort', sortDir); } else { th.setAttribute('aria-sort','none'); } }); }
     function applyFilters(list){ let L = list.slice(); if(nameFilter.trim()){ const q = nameFilter.trim().toLowerCase(); L = L.filter(ch=> (db.contacts.find(c=>c.id===ch.contactId)?.name || '').toLowerCase().includes(q)); } if(companyFilter!=='All'){ L = L.filter(ch=> (function(){ const contact = db.contacts.find(c=>c.id===ch.contactId); const co = contact ? db.companies.find(c=>c.id===contact.companyId) : null; return (co?co.name:''); })() === companyFilter); } if(statusFilter!=='All'){ L = L.filter(ch=> ch.status === statusFilter); } if(typeFilter!=='All'){ L = L.filter(ch=> { const chatType = ch.chatType || (ch.jobId ? 'job' : 'entrepreneurship'); return typeFilter === 'Job related' ? chatType === 'job' : chatType === 'entrepreneurship'; }); } return L; }
-    function applyAll(list){ let L = applyFilters(list); if(!sortKey) return L; return L.slice().sort((a,b)=>{ const get = (ch,k)=>{ if(k==='contact') return (db.contacts.find(c=>c.id===ch.contactId)?.name||'').toLowerCase(); if(k==='company'){ const contact = db.contacts.find(c=>c.id===ch.contactId); const co = contact ? db.companies.find(c=>c.id===contact.companyId) : null; return (co?co.name:'').toLowerCase(); } if(k==='job') return (db.jobs.find(j=>j.id===ch.jobId)?.title||'').toLowerCase(); if(k==='status') return (ch.status||'').toLowerCase(); if(k==='channel') return (ch.channel||'').toLowerCase(); if(k==='scheduled') return (ch.dateScheduled||'').toLowerCase(); if(k==='type'){ const chatType = ch.chatType || (ch.jobId ? 'job' : 'entrepreneurship'); return (chatType === 'job' ? 'job related' : 'entrepreneurship').toLowerCase(); } if(k==='notes') return (ch.notes||'').toLowerCase(); return ''; }; const av = get(a,sortKey), bv = get(b,sortKey); if(av < bv) return sortDir==='ascending' ? -1 : 1; if(av > bv) return sortDir==='ascending' ? 1 : -1; return 0; }); }
-    function drawBody(){ tbody.innerHTML=''; applyAll(db.chats).forEach(ch=>{ const contact = db.contacts.find(c=>c.id===ch.contactId); const job = db.jobs.find(j=>j.id===ch.jobId); const company = (function(){ const coFromContact = contact ? db.companies.find(c=>c.id===contact.companyId) : null; return coFromContact ? coFromContact.name : (db.companies.find(c=>c.id===ch.companyId)?.name || ''); })(); const chatType = ch.chatType || (ch.jobId ? 'job' : 'entrepreneurship'); const typeDisplay = chatType === 'job' ? 'Job related' : 'Entrepreneurship'; const tr = el('tr'); tr.appendChild(el('td',{},[ contact? contact.name : '—' ])); tr.appendChild(el('td',{},[ company || '—' ])); tr.appendChild(el('td',{},[ job? job.title : '—' ])); tr.appendChild(el('td',{},[ ch.status || '—' ])); tr.appendChild(el('td',{},[ ch.channel==='other'? (ch.channelOther||'Other') : (ch.channel||'—') ])); tr.appendChild(el('td',{},[ ch.dateScheduled ? fmtDate(ch.dateScheduled) : '—' ])); tr.appendChild(el('td',{},[ typeDisplay ]));
+    function applyAll(list){ let L = applyFilters(list); if(!sortKey) return L; return L.slice().sort((a,b)=>{ const get = (ch,k)=>{ if(k==='contact') return (db.contacts.find(c=>c.id===ch.contactId)?.name||'').toLowerCase(); if(k==='company'){ const contact = db.contacts.find(c=>c.id===ch.contactId); const co = contact ? db.companies.find(c=>c.id===contact.companyId) : null; return (co?co.name:'').toLowerCase(); } if(k==='job') return (db.jobs.find(j=>j.id===ch.jobId)?.title||'').toLowerCase(); if(k==='status') return (ch.status||'').toLowerCase(); if(k==='channel') return (ch.channel||'').toLowerCase(); if(k==='scheduled') return (ch.dateScheduled||'').toLowerCase(); if(k==='type'){ const chatType = ch.chatType || (ch.jobId ? 'job' : 'entrepreneurship'); return (chatType === 'job' ? 'job related' : 'entrepreneurship').toLowerCase(); } if(k==='created') return (ch.createdDate||'').toLowerCase(); if(k==='notes') return (ch.notes||'').toLowerCase(); return ''; }; const av = get(a,sortKey), bv = get(b,sortKey); if(av < bv) return sortDir==='ascending' ? -1 : 1; if(av > bv) return sortDir==='ascending' ? 1 : -1; return 0; }); }
+    function drawBody(){ tbody.innerHTML=''; applyAll(db.chats).forEach(ch=>{ const contact = db.contacts.find(c=>c.id===ch.contactId); const job = db.jobs.find(j=>j.id===ch.jobId); const company = (function(){ const coFromContact = contact ? db.companies.find(c=>c.id===contact.companyId) : null; return coFromContact ? coFromContact.name : (db.companies.find(c=>c.id===ch.companyId)?.name || ''); })(); const chatType = ch.chatType || (ch.jobId ? 'job' : 'entrepreneurship'); const typeDisplay = chatType === 'job' ? 'Job related' : 'Entrepreneurship'; const tr = el('tr'); tr.appendChild(el('td',{},[ contact? contact.name : '—' ])); tr.appendChild(el('td',{},[ company || '—' ])); tr.appendChild(el('td',{},[ job? job.title : '—' ])); tr.appendChild(el('td',{},[ ch.status || '—' ])); tr.appendChild(el('td',{},[ ch.channel==='other'? (ch.channelOther||'Other') : (ch.channel||'—') ])); tr.appendChild(el('td',{},[ ch.dateScheduled ? fmtDate(ch.dateScheduled) : '—' ])); tr.appendChild(el('td',{},[ typeDisplay ])); tr.appendChild(el('td',{},[ ch.createdDate ? fmtDate(ch.createdDate) : '—' ]));
     tr.appendChild(el('td',{},[ ch.notes? (ch.notes.slice(0,40)+(ch.notes.length>40?'…':'')) : '—' ])); 
     const act = el('td');
     const dropdown = makeActionDropdown(
@@ -6135,6 +6149,13 @@ function openChatModal(ch){
   // Initialize chatType if not set - default to 'job'
   if (!state.chatType) {
     state.chatType = 'job'; // Always default to job search
+  }
+  
+  // Set default dates for new coffee chats
+  if (!isEdit) {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    state.createdDate = today;
+    state.lastUpdatedDate = today;
   }
   
   const form = el('div');
@@ -6322,11 +6343,17 @@ function openChatModal(ch){
   const r3 = el('div',{class:'row'});
   r3.appendChild(inputField('Scheduled','dateScheduled','date'));
   r3.appendChild(inputField('Channel (if other)','channelOther'));
+  
+  // Add date fields row
+  const rDates = el('div',{class:'row'});
+  rDates.appendChild(inputField('Created','createdDate','date'));
+  rDates.appendChild(inputField('Last Updated','lastUpdatedDate','date'));
+  
   const r4 = el('div',{}); r4.appendChild(textField('Notes','notes'));
   function inputField(lbl,key,type='text'){ const box = el('div'); box.appendChild(el('label',{html:lbl})); const n = el('input',{type, value:state[key]||''}); n.oninput=()=> state[key]=n.value; box.appendChild(n); return box; }
   function selectField(lbl,key,opts){ const box = el('div'); box.appendChild(el('label',{html:lbl})); const n = el('select'); n.appendChild(el('option',{value:''},['—'])); opts.forEach(o=> n.appendChild(el('option',{value:o.value},[o.label]))); n.value = state[key]||''; n.onchange=()=> state[key]=n.value; box.appendChild(n); return box; }
   function textField(lbl,key){ const box = el('div'); box.appendChild(el('label',{html:lbl})); const n = el('textarea'); n.value = state[key]||''; n.oninput=()=> state[key]=n.value; box.appendChild(n); return box; }
-  form.appendChild(r1); form.appendChild(r2); form.appendChild(r3); form.appendChild(r4);
+  form.appendChild(r1); form.appendChild(r2); form.appendChild(r3); form.appendChild(rDates); form.appendChild(r4);
   const actions = el('div',{class:'right'});
   const saveBtn = el('button',{class:'btn-teal'},[isEdit?'Save':'Add']);
   saveBtn.onclick = ()=>{ if(!state.contactId) return alert('Contact is required'); if(isEdit){ db.chats = db.chats.map(x=> x.id===state.id? {...x, ...state} : x); } else { state.id = uid('chat'); db.chats.unshift(state); } save(); modal.close(); render(); };
